@@ -14,5 +14,5 @@ rate_limit:
   time_window: 60
 
 auth:
-  api_keys: []
+  OLLAMA_TOKEN: []
   header_name: "Authorization"
