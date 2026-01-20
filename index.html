@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Gateway – Ollama Client Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg-alt: #0b1020;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.15);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2933;
+      --danger: #f97373;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.55);
+      --shadow-inner: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+      color: var(--text);
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1200px;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(3, 7, 18, 0.98));
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    @media (max-width: 900px) {
+      .shell {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .pane {
+      padding: 24px 26px;
+    }
+
+    .pane--left {
+      border-right: 1px solid rgba(15, 23, 42, 0.9);
+      background: radial-gradient(circle at top left, rgba(79, 70, 229, 0.16), transparent 55%);
+    }
+
+    @media (max-width: 900px) {
+      .pane--left {
+        border-right: none;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.9);
+      }
+    }
+
+    .pane--right {
+      background: radial-gradient(circle at top right, rgba(8, 47, 73, 0.4), transparent 55%);
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--muted);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.16), rgba(15, 23, 42, 0.9));
+    }
+
+    .badge--accent {
+      border-color: rgba(79, 70, 229, 0.7);
+      color: #c7d2fe;
+      background: radial-gradient(circle at top left, rgba(79, 70, 229, 0.3), rgba(15, 23, 42, 0.9));
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 26px;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 span.logo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #a5b4fc, #4f46e5);
+      box-shadow: 0 0 16px rgba(129, 140, 248, 0.9);
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 460px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
+    }
+
+    .card {
+      margin-top: 10px;
+      padding: 14px 14px 12px;
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.98));
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      box-shadow: var(--shadow-inner);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
+    }
+
+    .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      padding: 10px 11px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      box-shadow: var(--shadow-inner);
+    }
+
+    textarea:focus {
+      border-color: rgba(79, 70, 229, 0.9);
+      box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.7);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .model-select {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    select {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      color: var(--text);
+      padding: 4px 8px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: radial-gradient(circle at top left, #4f46e5, #1d4ed8);
+      color: #e5e7eb;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.55);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .btn-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(191, 219, 254, 0.7);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+
+    .response-card {
+      margin-top: 14px;
+      padding: 12px 12px 10px;
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.98));
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      box-shadow: var(--shadow-inner);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    .response-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    /* Right pane: language tabs */
+
+    .tabs-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .tabs-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .tab-list {
+      display: inline-flex;
+      gap: 4px;
+      padding: 3px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+    }
+
+    .tab {
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 11px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .tab--active {
+      background: radial-gradient(circle at top left, rgba(79, 70, 229, 0.4), rgba(15, 23, 42, 0.9));
+      color: #e5e7eb;
+      box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.7);
+    }
+
+    .code-panel {
+      margin-top: 6px;
+      padding: 10px;
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.98));
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      box-shadow: var(--shadow-inner);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      max-height: 360px;
+      overflow: auto;
+      position: relative;
+    }
+
+    .code-lang-label {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    pre {
+      margin: 0;
+      padding-top: 10px;
+      white-space: pre;
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .hint strong {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- LEFT: Live gateway console -->
+    <div class="pane pane--left">
+      <div class="badge-row">
+        <div class="badge badge--accent">AI Gateway · Ollama</div>
+        <div class="badge">Multi-language client surface</div>
+      </div>
+
+      <h1>
+        <span class="logo-dot"></span>
+        Gateway Console
+      </h1>
+      <p class="subtitle">
+        Send prompts through your AI gateway and mirror the same contract from JavaScript, Python, Go, and Kotlin.
+      </p>
+
+      <div class="pill-row">
+        <div class="pill">
+          <span class="pill-dot"></span>
+          Live HTTP contract
+        </div>
+        <div class="pill">JSON in · JSON out</div>
+        <div class="pill">Gateway-first design</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Prompt</div>
+          <div class="status-dot" id="status-dot"></div>
+        </div>
+
+        <label class="label" for="prompt-input">Prompt to model</label>
+        <textarea id="prompt-input" placeholder="Explain the architecture of my AI gateway in simple terms..."></textarea>
+
+        <div class="controls">
+          <div class="model-select">
+            <span>Model:</span>
+            <select id="model-select">
+              <option value="llama3.1">llama3.1</option>
+              <option value="llama3">llama3</option>
+              <option value="qwen2.5">qwen2.5</option>
+              <option value="custom-gateway-model">custom-gateway-model</option>
+            </select>
+          </div>
+
+          <button id="send-btn">
+            <span class="btn-icon">▶</span>
+            Send to Gateway
+          </button>
+        </div>
+
+        <div id="error" class="error" style="display:none;"></div>
+
+        <div class="response-card" id="response-card" style="display:none;">
+          <div class="response-header">
+            <span>Gateway response</span>
+            <span id="latency-label">– ms</span>
+          </div>
+          <div id="response-text"></div>
+        </div>
+      </div>
+
+      <p class="hint">
+        <strong>Endpoint contract:</strong> JavaScript calls <code>POST /api/generate</code> with
+        <code>{ model, prompt }</code> and expects <code>{ output }</code>. Mirror this in every language client.
+      </p>
+    </div>
+
+    <!-- RIGHT: Language client snippets -->
+    <div class="pane pane--right">
+      <div class="tabs-header">
+        <div class="tabs-title">Client snippets</div>
+        <div class="tab-list">
+          <button class="tab tab--active" data-lang="js">JS</button>
+          <button class="tab" data-lang="py">Python</button>
+          <button class="tab" data-lang="go">Go</button>
+          <button class="tab" data-lang="kt">Kotlin</button>
+        </div>
+      </div>
+
+      <div class="code-panel">
+        <div class="code-lang-label" id="code-lang-label">JavaScript</div>
+        <pre id="code-block">
+// JavaScript – browser / Node
+async function callGateway(prompt, model = "llama3.1") {
+  const res = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model, prompt })
+  });
+
+  if (!res.ok) {
+    throw new Error("Gateway error: " + res.status);
+  }
+
+  const data = await res.json();
+  // Expecting: { output: "..." }
+  return data.output;
+}
+
+callGateway("Hello from JavaScript client")
+  .then(console.log)
+  .catch(console.error);
+        </pre>
+      </div>
+
+      <p class="hint">
+        Swap <code>/api/generate</code> for your Ollama gateway URL (e.g. reverse proxy, API gateway, or direct host).
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // --- JavaScript: live console wiring ---
+
+    const sendBtn = document.getElementById("send-btn");
+    const promptInput = document.getElementById("prompt-input");
+    const modelSelect = document.getElementById("model-select");
+    const responseCard = document.getElementById("response-card");
+    const responseText = document.getElementById("response-text");
+    const latencyLabel = document.getElementById("latency-label");
+    const errorBox = document.getElementById("error");
+    const statusDot = document.getElementById("status-dot");
+
+    const tabs = document.querySelectorAll(".tab");
+    const codeBlock = document.getElementById("code-block");
+    const codeLangLabel = document.getElementById("code-lang-label");
+
+    const snippets = {
+      js: `// JavaScript – browser / Node
+async function callGateway(prompt, model = "llama3.1") {
+  const res = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model, prompt })
+  });
+
+  if (!res.ok) {
+    throw new Error("Gateway error: " + res.status);
+  }
+
+  const data = await res.json();
+  // Expecting: { output: "..." }
+  return data.output;
+}
+
+callGateway("Hello from JavaScript client")
+  .then(console.log)
+  .catch(console.error);`,
+
+      py: `# Python – requests client
+import requests
+
+GATEWAY_URL = "http://localhost:11434/api/generate"  # or your gateway URL
+
+def call_gateway(prompt: str, model: str = "llama3.1") -> str:
+    payload = {
+        "model": model,
+        "prompt": prompt,
+    }
+    resp = requests.post(GATEWAY_URL, json=payload, timeout=60)
+    resp.raise_for_status()
+    data = resp.json()
+    # Expecting: { "output": "..." }
+    return data.get("output", "")
+
+if __name__ == "__main__":
+    out = call_gateway("Hello from Python client")
+    print(out)`,
+
+      go: `// Go – net/http client
+package main
+
+import (
+  "bytes"
+  "encoding/json"
+  "fmt"
+  "net/http"
+  "time"
+  "io"
+)
+
+const gatewayURL = "http://localhost:11434/api/generate"
+
+type RequestBody struct {
+  Model  string \`json:"model"\`
+  Prompt string \`json:"prompt"\`
+}
+
+type ResponseBody struct {
+  Output string \`json:"output"\`
+}
+
+func callGateway(prompt, model string) (string, error) {
+  body := RequestBody{Model: model, Prompt: prompt}
+  buf, err := json.Marshal(body)
+  if err != nil {
+    return "", err
+  }
+
+  client := &http.Client{Timeout: 60 * time.Second}
+  req, err := http.NewRequest("POST", gatewayURL, bytes.NewReader(buf))
+  if err != nil {
+    return "", err
+  }
+  req.Header.Set("Content-Type", "application/json")
+
+  resp, err := client.Do(req)
+  if err != nil {
+    return "", err
+  }
+  defer resp.Body.Close()
+
+  if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+    b, _ := io.ReadAll(resp.Body)
+    return "", fmt.Errorf("gateway error: %s – %s", resp.Status, string(b))
+  }
+
+  var out ResponseBody
+  if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+    return "", err
+  }
+  return out.Output, nil
+}
+
+func main() {
+  out, err := callGateway("Hello from Go client", "llama3.1")
+  if err != nil {
+    panic(err)
+  }
+  fmt.Println(out)
+}`,
+
+      kt: `// Kotlin – Ktor HTTP client (JVM)
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
+
+private const val GATEWAY_URL = "http://localhost:11434/api/generate"
+
+@Serializable
+data class GatewayRequest(
+  val model: String,
+  val prompt: String
+)
+
+@Serializable
+data class GatewayResponse(
+  val output: String
+)
+
+fun callGateway(prompt: String, model: String = "llama3.1"): String = runBlocking {
+  val client = HttpClient(CIO)
+  try {
+    val payload = GatewayRequest(model = model, prompt = prompt)
+    val response: HttpResponse = client.post(GATEWAY_URL) {
+      contentType(ContentType.Application.Json)
+      setBody(payload)
+    }
+
+    val bodyText = response.bodyAsText()
+    val parsed = Json.decodeFromString<GatewayResponse>(bodyText)
+    parsed.output
+  } finally {
+    client.close()
+  }
+}
+
+fun main() {
+  val out = callGateway("Hello from Kotlin client")
+  println(out)
+}`
+    };
+
+    function setActiveSnippet(lang) {
+      tabs.forEach((tab) => {
+        tab.classList.toggle("tab--active", tab.dataset.lang === lang);
+      });
+
+      codeBlock.textContent = snippets[lang] || "";
+      const labelMap = {
+        js: "JavaScript",
+        py: "Python",
+        go: "Go",
+        kt: "Kotlin"
+      };
+      codeLangLabel.textContent = labelMap[lang] || "";
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        setActiveSnippet(tab.dataset.lang);
+      });
+    });
+
+    async function sendPrompt() {
+      const prompt = promptInput.value.trim();
+      const model = modelSelect.value;
+
+      errorBox.style.display = "none";
+      responseCard.style.display = "none";
+
+      if (!prompt) {
+        errorBox.textContent = "Prompt cannot be empty.";
+        errorBox.style.display = "block";
+        return;
+      }
+
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<span class="btn-icon">●</span>Sending…';
+      statusDot.style.background = "#facc15";
+      statusDot.style.boxShadow = "0 0 12px rgba(250, 204, 21, 0.9)";
+
+      const start = performance.now();
+
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model, prompt })
+        });
+
+        const elapsed = Math.round(performance.now() - start);
+        latencyLabel.textContent = elapsed + " ms";
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error("Gateway error " + res.status + ": " + text);
+        }
+
+        const data = await res.json();
+        const output = data.output || JSON.stringify(data, null, 2);
+
+        responseText.textContent = output;
+        responseCard.style.display = "block";
+
+        statusDot.style.background = "#22c55e";
+        statusDot.style.boxShadow = "0 0 12px rgba(34, 197, 94, 0.9)";
+      } catch (err) {
+        errorBox.textContent = err.message || String(err);
+        errorBox.style.display = "block";
+
+        statusDot.style.background = "#f97373";
+        statusDot.style.boxShadow = "0 0 12px rgba(248, 113, 113, 0.9)";
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<span class="btn-icon">▶</span>Send to Gateway';
+      }
+    }
+
+    sendBtn.addEventListener("click", sendPrompt);
+    promptInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        sendPrompt();
+      }
+    });
+  </script>
+</body>
+</html>
